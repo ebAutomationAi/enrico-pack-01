@@ -1,1 +1,322 @@
+{
+  "name": "Pack #1 - Funnel (Sheets Trigger → Gmail → Update Sheet)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_ME_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "REPLACE_ME_SHEET_GID_OR_SELECT_FROM_LIST",
+          "mode": "list",
+          "cachedResultName": "Respuestas de formulario 1"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -40
+      ],
+      "id": "b0f0f9c2-7a77-4a52-8f7a-0c1e1d7a7c11",
+      "name": "Google Sheets Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-pendiente",
+              "leftValue": "={{ (($json.sent ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim().toLowerCase() !== \"true\") }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        460,
+        -40
+      ],
+      "id": "c8bce8ab-1bdf-4b62-b10b-2ad6d1ce7b17",
+      "name": "IF - Pendiente (sent != true)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-email-valido",
+              "leftValue": "={{ ((($json[\"Dirección de correo electrónico\"] ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim()) !== \"\") }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        700,
+        -40
+      ],
+      "id": "b5a631b4-1e57-4d54-a0c1-4ad2d03b1f20",
+      "name": "IF - Email válido"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ ($json[\"Dirección de correo electrónico\"] ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}",
+        "subject": "Pack #1 (GRATIS) — Plantillas n8n + enlace de descarga",
+        "message": "=Hola {{ $json[\"Nombre\"] }},\n\nAquí tienes el Pack #1 (GRATIS).\n\nDescarga directa:\nhttps://github.com/ebAutomationAi/enrico-pack-01/releases/latest/download/enrico-pack-01.zip\n\nIncluye:\n- Funnel Google Form → Google Sheets → n8n → Gmail (con logging y control de reenvíos)\n\nNota GDPR-safe:\n- En demos uso datos ficticios.\n- Sustituye siempre por tus datos reales en tu entorno privado.\n\n— Enrico",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        980,
+        -20
+      ],
+      "id": "ef8b26c0-e2f1-4b55-9b27-3c1d2d9190a1",
+      "name": "Gmail - Send Pack #1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1160,
+        -260
+      ],
+      "id": "d0e67b32-1b0d-4a6a-8bc8-c5c6b7d159e0",
+      "name": "Merge (Input1 row, Input2 Gmail)"
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1340,
+        -260
+      ],
+      "id": "dbbca1f5-98d8-4b19-8d89-7f0cf8d2c3c2",
+      "name": "Edit Fields (pass-through)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_ME_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "REPLACE_ME_SHEET_GID_OR_SELECT_FROM_LIST",
+          "mode": "list",
+          "cachedResultName": "Respuestas de formulario 1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_key": "={{ ($json.row_key ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}",
+            "sent": "={{ $json.id ? true : \"\" }}",
+            "sent_at": "={{ $json.id ? $now.setZone('Europe/Madrid').toISO() : \"\" }}",
+            "status": "={{ $json.id ? \"SENT\" : \"ERROR\" }}",
+            "err_msg": "={{ $json.id ? \"\" : ( $json.error?.message ?? $json.error?.description ?? $json.error?.cause?.message ?? $json.message ?? $json?.response?.body?.error?.message ?? $json?.response?.body ?? \"Gmail send failed\" ) }}",
+            "gmail_id": "={{ $json.id ?? \"\" }}",
+            "gmail_threadId": "={{ $json.threadId ?? \"\" }}"
+          },
+          "matchingColumns": [
+            "row_key"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1540,
+        -260
+      ],
+      "id": "b6a03d61-74f0-4c8a-9ed3-16b1e3c7fe10",
+      "name": "Update row in sheet (SENT/ERROR)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_ME_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "REPLACE_ME_SHEET_GID_OR_SELECT_FROM_LIST",
+          "mode": "list",
+          "cachedResultName": "Respuestas de formulario 1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_key": "={{ ($json.row_key ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}",
+            "sent": "={{ \"\" }}",
+            "sent_at": "={{ \"\" }}",
+            "status": "={{ \"ERROR\" }}",
+            "err_msg": "={{ \"Missing email\" }}",
+            "gmail_id": "={{ \"\" }}",
+            "gmail_threadId": "={{ \"\" }}"
+          },
+          "matchingColumns": [
+            "row_key"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        980,
+        220
+      ],
+      "id": "08b8c7ef-0a5b-4c0b-bdc9-8d12f3b1c901",
+      "name": "Update row in sheet (ERROR Missing email)"
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "IF - Pendiente (sent != true)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Pendiente (sent != true)": {
+      "main": [
+        [
+          {
+            "node": "IF - Email válido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Email válido": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Send Pack #1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge (Input1 row, Input2 Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet (ERROR Missing email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Send Pack #1": {
+      "main": [
+        [
+          {
+            "node": "Merge (Input1 row, Input2 Gmail)",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge (Input1 row, Input2 Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields (pass-through)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields (pass-through)": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet (SENT/ERROR)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "pack-01-funnel-googleform-sheets-gmail"
+}
 
