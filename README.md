@@ -15,7 +15,7 @@ Pack #1 es un funnel de captación y entrega automática:
 Recomendado: descargar el ZIP desde GitHub Releases.
 
 - Última versión (descarga directa):
-  `https://github.com/<TU_USUARIO>/enrico-pack-01/releases/latest/download/enrico-pack-01.zip`
+  `https://github.com/ebAutomationAi/enrico-pack-01/releases/latest/download/enrico-pack-01.zip`
 
 ---
 
