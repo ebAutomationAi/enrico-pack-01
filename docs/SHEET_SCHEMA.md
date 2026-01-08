@@ -42,3 +42,38 @@ Suposición de columnas:
   )
 )
 
+
+Notas
+
+Esto rellena row_key automáticamente para filas nuevas.
+
+LOWER(TRIM(...)) normaliza el email y evita espacios invisibles.
+
+Si la columna B no está en formato fecha/hora, corrige primero el formato:
+
+Formato → Número → Fecha y hora
+
+Evita escribir row_key manualmente si usas esta fórmula (para no meter saltos de línea o espacios).
+
+3) Valores esperados por el workflow
+En éxito (Gmail ok)
+
+sent = TRUE
+
+sent_at = ISO (zona Europe/Madrid)
+
+status = SENT
+
+err_msg = ""
+
+gmail_id y gmail_threadId rellenados
+
+En error (email vacío / item raro)
+
+status = ERROR
+
+err_msg = Missing email (o el error real de Gmail)
+
+sent y sent_at vacíos
+
+gmail_id y gmail_threadId vacíos
