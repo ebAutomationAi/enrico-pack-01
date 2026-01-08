@@ -134,3 +134,9 @@ Resultado esperado:
 - Gmail: Continue On Fail ON
 - Backup del volumen de n8n realizado
 
+Después de importarlo en n8n: En Google Sheets Trigger, selecciona el Spreadsheet y la sheet desde el desplegable. 
+En ambos Google Sheets: Update, selecciona el mismo Spreadsheet y sheet desde el desplegable. 
+En Gmail - Send Pack #1, activa Settings → Continue On Fail = ON (esto no lo fuerza el JSON). 
+y estas otras lineas: Notas: Esto rellena row_key automáticamente para filas nuevas. 
+LOWER(TRIM(...)) normaliza el email y evita espacios invisibles. 
+Si la columna B no está en formato datetime, primero corrige el formato (Formato → Número → Fecha y hora).
