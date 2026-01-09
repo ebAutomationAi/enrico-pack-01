@@ -1,6 +1,257 @@
 {
-  "name": "Pack #1 - Funnel (Sheets Trigger → Gmail → Update Sheet)",
+  "name": "Funnel Pack-01 PROD",
   "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b16313ff-a474-4416-a37a-f4f866652272",
+              "leftValue": "={{ (($json.sent ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim().toLowerCase() !== \"true\") }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "975d7bab-3e87-485a-ad53-eb6fdbb8cc86",
+              "leftValue": "={{ (($json.sent ?? \"\").toString().trim().toLowerCase() !== \"true\") }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        400,
+        16
+      ],
+      "id": "10d92229-02cd-4234-92c1-562f69952e1d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ ($json[\"Dirección de correo electrónico\"] ?? \"\").toString().trim() }}",
+        "subject": "Pack #1 (GRATIS) — Plantillas n8n + enlace de descarga",
+        "message": "=Hola {{ $json[\"Nombre\"] }},  Aquí tienes el Pack #1 (GRATIS):  \nDescarga: \n\nhttps://github.com/ebAutomationAi/enrico-pack-01/releases/latest/download/enrico-pack-01.zip\n\nIncluye: - 01 — Pack #1 (n8n)  GDPR-safe mode: - En demos uso datos ficticios. - Sustituye siempre por tus datos reales.  — Enrico",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        -32
+      ],
+      "id": "cbb136bb-6c7f-4b60-95dd-8b711a5769dc",
+      "name": "Send a message",
+      "webhookId": "9c319e43-ef60-4422-b7d4-cd6b9815044a",
+      "retryOnFail": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sYSbPInk7B1uTaIQ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "17x_8Idv0w2n5qpGRbULQBvwJzsp2ba8m32663pR9z1E",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1544193210,
+          "mode": "list",
+          "cachedResultName": "Respuestas de formulario 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17x_8Idv0w2n5qpGRbULQBvwJzsp2ba8m32663pR9z1E/edit#gid=1544193210"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sent": "={{ $json.id ? true : \"\" }}",
+            "sent_at": "={{ $json.id ? $now.setZone('Europe/Madrid').toFormat('yyyy-LL-dd HH:mm:ss') : \"\" }}",
+            "status": "={{ $json.id ? \"SENT\" : \"ERROR\" }}",
+            "err_msg": "={{ \n  $json.id \n    ? \"\" \n    : (\n        $json.error?.message \n        ?? $json.error?.description \n        ?? $json.error?.cause?.message\n        ?? $json.message\n        ?? $json?.response?.body?.error?.message\n        ?? $json?.response?.body\n        ?? \"Gmail send failed\"\n      ) \n}}",
+            "gmail_id": "={{ $json.id ?? \"\" }}",
+            "gmail_threadId": "={{ $json.threadId ?? \"\" }}",
+            "row_key": "={{ ($json.row_key ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}"
+          },
+          "matchingColumns": [
+            "row_key"
+          ],
+          "schema": [
+            {
+              "id": "row_key",
+              "displayName": "row_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Marca temporal",
+              "displayName": "Marca temporal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Dirección de correo electrónico",
+              "displayName": "Dirección de correo electrónico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Objetivo",
+              "displayName": "Objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent",
+              "displayName": "sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "err_msg",
+              "displayName": "err_msg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gmail_id",
+              "displayName": "gmail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gmail_threadId",
+              "displayName": "gmail_threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1376,
+        -192
+      ],
+      "id": "2528d3a4-6195-4356-859a-387dd2308b31",
+      "name": "Update row in sheet",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FJAvfYXPXbYzf27U",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1056,
+        -208
+      ],
+      "id": "2a5eb0bf-189c-45be-9722-76432331714c",
+      "name": "Merge"
+    },
     {
       "parameters": {
         "pollTimes": {
@@ -12,14 +263,15 @@
         },
         "documentId": {
           "__rl": true,
-          "value": "REPLACE_ME_SPREADSHEET_ID",
+          "value": "17x_8Idv0w2n5qpGRbULQBvwJzsp2ba8m32663pR9z1E",
           "mode": "id"
         },
         "sheetName": {
           "__rl": true,
-          "value": "REPLACE_ME_SHEET_GID_OR_SELECT_FROM_LIST",
+          "value": 1544193210,
           "mode": "list",
-          "cachedResultName": "Respuestas de formulario 1"
+          "cachedResultName": "Respuestas de formulario 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17x_8Idv0w2n5qpGRbULQBvwJzsp2ba8m32663pR9z1E/edit#gid=1544193210"
         },
         "event": "rowAdded",
         "options": {}
@@ -27,111 +279,17 @@
       "type": "n8n-nodes-base.googleSheetsTrigger",
       "typeVersion": 1,
       "position": [
-        240,
-        -40
+        224,
+        -32
       ],
-      "id": "b0f0f9c2-7a77-4a52-8f7a-0c1e1d7a7c11",
-      "name": "Google Sheets Trigger"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "cond-pendiente",
-              "leftValue": "={{ (($json.sent ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim().toLowerCase() !== \"true\") }}",
-              "rightValue": "={{ true }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "equals",
-                "name": "filter.operator.equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        460,
-        -40
-      ],
-      "id": "c8bce8ab-1bdf-4b62-b10b-2ad6d1ce7b17",
-      "name": "IF - Pendiente (sent != true)"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "cond-email-valido",
-              "leftValue": "={{ ((($json[\"Dirección de correo electrónico\"] ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim()) !== \"\") }}",
-              "rightValue": "={{ true }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "equals",
-                "name": "filter.operator.equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        700,
-        -40
-      ],
-      "id": "b5a631b4-1e57-4d54-a0c1-4ad2d03b1f20",
-      "name": "IF - Email válido"
-    },
-    {
-      "parameters": {
-        "sendTo": "={{ ($json[\"Dirección de correo electrónico\"] ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}",
-        "subject": "Pack #1 (GRATIS) — Plantillas n8n + enlace de descarga",
-        "message": "=Hola {{ $json[\"Nombre\"] }},\n\nAquí tienes el Pack #1 (GRATIS).\n\nDescarga directa:\nhttps://github.com/ebAutomationAi/enrico-pack-01/releases/latest/download/enrico-pack-01.zip\n\nIncluye:\n- Funnel Google Form → Google Sheets → n8n → Gmail (con logging y control de reenvíos)\n\nNota GDPR-safe:\n- En demos uso datos ficticios.\n- Sustituye siempre por tus datos reales en tu entorno privado.\n\n— Enrico",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.2,
-      "position": [
-        980,
-        -20
-      ],
-      "id": "ef8b26c0-e2f1-4b55-9b27-3c1d2d9190a1",
-      "name": "Gmail - Send Pack #1",
-      "alwaysOutputData": false
-    },
-    {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineByPosition",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
-      "position": [
-        1160,
-        -260
-      ],
-      "id": "d0e67b32-1b0d-4a6a-8bc8-c5c6b7d159e0",
-      "name": "Merge (Input1 row, Input2 Gmail)"
+      "id": "efd606de-25f2-4a58-b601-1d51a2ecf143",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "ZBGh1R1mBZooRDg9",
+          "name": "Google Sheets Trigger account"
+        }
+      }
     },
     {
       "parameters": {
@@ -141,81 +299,157 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1340,
-        -260
+        1216,
+        -208
       ],
-      "id": "dbbca1f5-98d8-4b19-8d89-7f0cf8d2c3c2",
-      "name": "Edit Fields (pass-through)"
+      "id": "a2035b5a-7b63-4560-be99-5ca7feffb127",
+      "name": "Edit Fields"
     },
     {
       "parameters": {
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "REPLACE_ME_SPREADSHEET_ID",
+          "value": "17x_8Idv0w2n5qpGRbULQBvwJzsp2ba8m32663pR9z1E",
           "mode": "id"
         },
         "sheetName": {
           "__rl": true,
-          "value": "REPLACE_ME_SHEET_GID_OR_SELECT_FROM_LIST",
+          "value": 1544193210,
           "mode": "list",
-          "cachedResultName": "Respuestas de formulario 1"
+          "cachedResultName": "Respuestas de formulario 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17x_8Idv0w2n5qpGRbULQBvwJzsp2ba8m32663pR9z1E/edit#gid=1544193210"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "row_key": "={{ ($json.row_key ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}",
-            "sent": "={{ $json.id ? true : \"\" }}",
-            "sent_at": "={{ $json.id ? $now.setZone('Europe/Madrid').toISO() : \"\" }}",
-            "status": "={{ $json.id ? \"SENT\" : \"ERROR\" }}",
-            "err_msg": "={{ $json.id ? \"\" : ( $json.error?.message ?? $json.error?.description ?? $json.error?.cause?.message ?? $json.message ?? $json?.response?.body?.error?.message ?? $json?.response?.body ?? \"Gmail send failed\" ) }}",
-            "gmail_id": "={{ $json.id ?? \"\" }}",
-            "gmail_threadId": "={{ $json.threadId ?? \"\" }}"
-          },
-          "matchingColumns": [
-            "row_key"
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        1540,
-        -260
-      ],
-      "id": "b6a03d61-74f0-4c8a-9ed3-16b1e3c7fe10",
-      "name": "Update row in sheet (SENT/ERROR)"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "documentId": {
-          "__rl": true,
-          "value": "REPLACE_ME_SPREADSHEET_ID",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "REPLACE_ME_SHEET_GID_OR_SELECT_FROM_LIST",
-          "mode": "list",
-          "cachedResultName": "Respuestas de formulario 1"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "row_key": "={{ ($json.row_key ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}",
             "sent": "={{ \"\" }}",
             "sent_at": "={{ \"\" }}",
             "status": "={{ \"ERROR\" }}",
             "err_msg": "={{ \"Missing email\" }}",
             "gmail_id": "={{ \"\" }}",
-            "gmail_threadId": "={{ \"\" }}"
+            "gmail_threadId": "={{ \"\" }}",
+            "row_key": "={{ ($json.row_key ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}"
           },
           "matchingColumns": [
             "row_key"
+          ],
+          "schema": [
+            {
+              "id": "row_key",
+              "displayName": "row_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Marca temporal",
+              "displayName": "Marca temporal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Dirección de correo electrónico",
+              "displayName": "Dirección de correo electrónico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Objetivo",
+              "displayName": "Objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent",
+              "displayName": "sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "err_msg",
+              "displayName": "err_msg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gmail_id",
+              "displayName": "gmail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gmail_threadId",
+              "displayName": "gmail_threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
           ],
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
@@ -225,86 +459,140 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        980,
-        220
+        912,
+        160
       ],
-      "id": "08b8c7ef-0a5b-4c0b-bdc9-8d12f3b1c901",
-      "name": "Update row in sheet (ERROR Missing email)"
+      "id": "3433e564-0b83-4043-940b-17bb460395da",
+      "name": "Update row in sheet - ERROR Missing email",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FJAvfYXPXbYzf27U",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4d1b03de-12ec-4caf-8110-98a26d69e234",
+              "leftValue": "={{ ($json[\"Dirección de correo electrónico\"] ?? \"\").toString().replace(/\\r?\\n/g, \"\").trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "26b1d37d-5d7d-4b4f-944b-31e9f0e635dc",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        -128
+      ],
+      "id": "1b9fd32b-20ee-44e5-9d95-780f5dec8008",
+      "name": "If1-email-valido"
     }
   ],
+  "pinData": {},
   "connections": {
-    "Google Sheets Trigger": {
+    "If": {
       "main": [
         [
           {
-            "node": "IF - Pendiente (sent != true)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF - Pendiente (sent != true)": {
-      "main": [
-        [
-          {
-            "node": "IF - Email válido",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF - Email válido": {
-      "main": [
-        [
-          {
-            "node": "Gmail - Send Pack #1",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge (Input1 row, Input2 Gmail)",
+            "node": "If1-email-valido",
             "type": "main",
             "index": 0
           }
         ],
-        [
-          {
-            "node": "Update row in sheet (ERROR Missing email)",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
-    "Gmail - Send Pack #1": {
+    "Send a message": {
       "main": [
         [
           {
-            "node": "Merge (Input1 row, Input2 Gmail)",
+            "node": "Merge",
             "type": "main",
             "index": 1
           }
         ]
       ]
     },
-    "Merge (Input1 row, Input2 Gmail)": {
+    "Merge": {
       "main": [
         [
           {
-            "node": "Edit Fields (pass-through)",
+            "node": "Edit Fields",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Edit Fields (pass-through)": {
+    "Google Sheets Trigger": {
       "main": [
         [
           {
-            "node": "Update row in sheet (SENT/ERROR)",
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1-email-valido": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet - ERROR Missing email",
             "type": "main",
             "index": 0
           }
@@ -312,11 +600,19 @@
       ]
     }
   },
-  "active": false,
-  "versionId": "1.0.0",
-  "meta": {
-    "templateCredsSetupCompleted": true
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
   },
-  "id": "pack-01-funnel-googleform-sheets-gmail"
+  "versionId": "9249f122-306e-4d34-8f67-15f22da3871e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1314b07c69839b7ccccb714f5ed1f8ae0fcaffc65a4c2d048aa718d531c7b64d"
+  },
+  "id": "ursd3bQZNzYD7dVB",
+  "tags": []
 }
-
