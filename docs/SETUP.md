@@ -1,142 +1,388 @@
-# SETUP — Pack #1 Funnel (Google Form → Sheets → n8n → Gmail)
+# SETUP — Pack #1 Funnel (Google Form → Google Sheets → SMTP) — n8n self-hosted (Docker/Windows)
 
-Este documento asume:
-- n8n 2.x (self-hosted, Docker)
-- TZ: Europe/Madrid
-- Google Form conectado a Google Sheets (tab: “Respuestas de formulario 1”)
-- OAuth de Gmail y Google Sheets ya creado en n8n (o lo vas a crear ahora)
+Este pack implementa un funnel de captura y entrega con:
+- Captación: Google Form → escribe en Google Sheets (tab “Respuestas de formulario 1”)
+- Automatización: n8n (self-hosted)
+- Envío: SMTP (Gmail) con App Password
+- Logging + anti-reenvío en la misma fila del Sheet
 
----
+## 0) Requisitos previos
 
-## 1) Preparar Google Sheets (requisito obligatorio)
+### Infra
+- n8n self-hosted corriendo (Docker) y accesible:
+  - Local: `http://localhost:5678`
+  - LAN (opcional): `http://<IP_LAN>:5678`
+- Zona horaria: Europe/Madrid (recomendado)
 
-### 1.1 Hoja correcta
-- Spreadsheet: el que recibe las respuestas del Form
-- Tab / Sheet: `Respuestas de formulario 1`
-
-### 1.2 Columnas requeridas (cabeceras exactas)
-Debes tener estas columnas (en este orden recomendado):
-
-1) `row_key`
-2) `Marca temporal`
-3) `Dirección de correo electrónico`
-4) `Nombre`
-5) `Objetivo`
-6) `sent`
-7) `sent_at`
-8) `status`
-9) `err_msg`
-10) `gmail_id`
-11) `gmail_threadId`
-
-Si ya existen las de Google Form (timestamp/email/nombre/objetivo), añade las restantes.
-
-### 1.3 Crear `row_key` (muy recomendado)
-En `docs/SHEET_SCHEMA.md` tienes la fórmula exacta para generar row_key con ARRAYFORMULA.
+### Cuentas Google
+- Una cuenta Google con acceso al Spreadsheet (para Google Sheets Trigger + Updates).
+- Una cuenta Gmail emisora para SMTP:
+  - **Obligatorio**: tener **Verificación en 2 pasos** activada
+  - **Obligatorio**: crear una **App Password** para “Mail” (o “n8n”)
 
 ---
 
-## 2) Importar el workflow en n8n
+## 1) Google Sheet — esquema y preparación
 
-### 2.1 Importar JSON
-1) Abre n8n (Editor)
-2) Menu lateral → `Workflows`
-3) Botón `Import from File`
-4) Selecciona:
-   - `workflows/pack-01-funnel-googleform-sheets-gmail.json`
+### 1.1 Tab y cabeceras
+Tab (pestaña) esperada: **Respuestas de formulario 1**
 
----
+Cabeceras exactas (fila 1). Recomendado este orden (puedes reordenar columnas, pero los nombres deben coincidir):
 
-## 3) Configurar credenciales (n8n)
+- `row_key`
+- `Marca temporal`
+- `Dirección de correo electrónico`
+- `Nombre`
+- `Objetivo`
+- `sent`
+- `sent_at`
+- `status`
+- `status_detail`
+- `err_msg`
+- `gmail_id`
+- `gmail_threadId`
 
-### 3.1 Google Sheets Trigger (credencial Trigger)
-1) Clic en nodo `Google Sheets Trigger`
-2) En `Credentials` selecciona:
-   - `Google Sheets Trigger account` (o tu credencial equivalente)
-3) En `Document` (Spreadsheet):
-   - Selecciona el Spreadsheet desde el desplegable
-4) En `Sheet`:
-   - Selecciona `Respuestas de formulario 1`
-5) `Event`:
-   - `On row added`
-6) `Poll time`:
-   - `Every minute` (o el intervalo que quieras)
+Notas:
+- `status_detail` es opcional pero recomendado.
+- En SMTP-only, `gmail_id` y `gmail_threadId` quedan vacíos (se mantienen por compatibilidad).
 
-### 3.2 Gmail (credencial Gmail OAuth)
-1) Clic en nodo `Gmail - Send Pack #1`
-2) Selecciona credencial `Gmail account` (o la tuya)
-3) Ve a la pestaña `Settings`
-4) Activa:
-   - `Continue On Fail` = ON
+### 1.2 row_key (clave estable para Update Row)
+Usamos `row_key` como clave estable para hacer Update Row (evita problemas de `row_number` nulo).
 
-### 3.3 Google Sheets Update (credencial Sheets OAuth)
-Hay 2 nodos:
-- `Update row in sheet (SENT/ERROR)`
-- `Update row in sheet (ERROR Missing email)`
+Formato:
+YYYY-MM-DD HH:mm:ss|email
 
-En ambos:
-1) Selecciona la credencial `Google Sheets account`
-2) Selecciona el mismo Spreadsheet
-3) Selecciona la misma Sheet `Respuestas de formulario 1`
-4) Confirma que el match es por:
-   - `Column to match on` = `row_key`
+css
+Copiar código
 
----
+#### Opción recomendada: ARRAYFORMULA para rellenar row_key automáticamente
+1. En la celda **A1** pon el header `row_key`.
+2. En la celda **A2** pega esta fórmula (ajusta las letras de columna si tu hoja no coincide):
+   - Asumiendo:
+     - `Marca temporal` está en **B**
+     - `Dirección de correo electrónico` está en **C**
 
-## 4) Configurar el email de entrega
+```gs
+=ARRAYFORMULA(
+  IF(
+    B2:B="",
+    "",
+    TEXT(B2:B,"yyyy-mm-dd hh:mm:ss") & "|" & LOWER(TRIM(REGEXREPLACE(C2:C, "\r|\n", "")))
+  )
+)
+Con esto:
 
-1) Abre nodo `Gmail - Send Pack #1`
-2) En `Message`, confirma/actualiza el link de descarga del ZIP:
+row_key se rellena solo en filas nuevas.
 
-https://github.com/ebAutomationAi/enrico-pack-01/releases/latest/download/enrico-pack-01.zip
+Normaliza email (lower + trim) y elimina saltos de línea.
 
-Recomendación: prueba el link en incógnito (sin login).
+1.3 Columnas de logging (formatos)
+sent: Boolean (TRUE/FALSE) o vacío
 
----
+sent_at: texto timestamp (recomendado YYYY-MM-DD HH:mm:ss)
 
-## 5) Activar el workflow
+status: OK_SENT o ERROR
 
-1) Pulsa `Save`
-2) Cambia el switch del workflow a `Active`
+status_detail: OK_SENT, E_MISSING_EMAIL, E_SMTP_SEND
 
----
+err_msg: vacío o texto con código + detalle
 
-## 6) Prueba end-to-end (obligatoria)
+gmail_id, gmail_threadId: vacío en SMTP-only
 
-### 6.1 Test real con Google Form
-1) Envía una respuesta nueva desde el Form con:
-   - email real
-   - nombre
-   - objetivo
-2) Espera al siguiente poll (hasta 1 minuto)
-3) Verifica:
-   - llega el email
-   - en la fila del sheet se actualiza:
-     - `sent` = TRUE
-     - `sent_at` = ISO con Europe/Madrid
-     - `status` = SENT
-     - `gmail_id` y `gmail_threadId` poblados
+2) SMTP (Gmail) — credenciales (App Password)
+2.1 Crear App Password (Gmail emisor)
+Entra en la cuenta emisora (ej. eb.automation.ai@gmail.com)
 
-### 6.2 Test de rama ERROR Missing email (solo para comprobar)
-En el Sheet, añade una fila nueva AL FINAL dejando el email vacío (sin espacios) y con row_key válido.
-Resultado esperado:
-- `status` = ERROR
-- `err_msg` = Missing email
+Google Account → Security
 
----
+Activa 2-Step Verification
 
-## 7) Producción: checklist mínimo
+Busca App passwords
 
-- Link de Release descargable en incógnito
-- IF “Pendiente” evita reenvíos (`sent != true`)
-- IF “Email válido” blinda filas raras
-- Update por `row_key` (no por email)
-- Gmail: Continue On Fail ON
-- Backup del volumen de n8n realizado
+Crea una App Password (por ejemplo: “n8n SMTP”)
 
-Después de importarlo en n8n: En Google Sheets Trigger, selecciona el Spreadsheet y la sheet desde el desplegable. 
-En ambos Google Sheets: Update, selecciona el mismo Spreadsheet y sheet desde el desplegable. 
-En Gmail - Send Pack #1, activa Settings → Continue On Fail = ON (esto no lo fuerza el JSON). 
-y estas otras lineas: Notas: Esto rellena row_key automáticamente para filas nuevas. 
-LOWER(TRIM(...)) normaliza el email y evita espacios invisibles. 
-Si la columna B no está en formato datetime, primero corrige el formato (Formato → Número → Fecha y hora).
+Copia la contraseña (se muestra una vez)
+
+2.2 SMTP settings (Gmail)
+Usaremos:
+
+Host: smtp.gmail.com
+
+Port recomendado: 465 (SSL)
+
+Usuario: tu Gmail completo (ej. eb.automation.ai@gmail.com)
+
+Password: App Password (NO tu contraseña normal)
+
+Client Host Name (si te lo pide): localhost
+
+3) Importar el workflow en n8n
+3.1 Importación
+En n8n → Workflows
+
+Import from File (o Import)
+
+Selecciona el JSON:
+
+workflows/pack-01-funnel-googleform-sheets-gmail.json
+
+3.2 Publicar (activación en n8n 2.x)
+En n8n 2.x, el workflow corre en producción cuando está Published.
+
+Abre el workflow
+
+Arriba a la derecha → Publish
+
+(Opcional) Pon “Version name” y “Describe changes”
+
+Confirmar Publish
+
+4) Configuración nodo por nodo (obligatorio)
+Importante: en todos los nodos de Google Sheets debes seleccionar el MISMO Spreadsheet y la MISMA Sheet.
+
+4.1 Google Sheets Trigger
+Nodo: Google Sheets Trigger
+
+Trigger On: Row added
+
+Spreadsheet: selecciona tu spreadsheet
+
+Sheet: Respuestas de formulario 1
+
+Polling interval: 1 min (recomendado)
+
+Credenciales:
+
+En el nodo → sección Credentials
+
+Selecciona tu credencial Google Sheets (OAuth)
+
+Si no existe:
+
+Create new → conectar con tu cuenta Google → Allow
+
+4.2 IF Pendiente (anti-reenvío)
+Nodo: IF Pendiente
+Condición (Expression):
+
+js
+Copiar código
+{{ (($json.sent ?? "").toString().replace(/\r?\n/g, "").trim().toLowerCase() !== "true") }}
+4.3 IF Email válido
+Nodo: IF Email válido
+Condición (Expression):
+
+js
+Copiar código
+{{ ($json["Dirección de correo electrónico"] ?? "").toString().replace(/\r?\n/g, "").trim() !== "" }}
+FALSE branch (email vacío) irá al Update ERROR.
+
+4.4 Send email (SMTP)
+Nodo: SMTP → Send (o “Send Email” vía SMTP)
+
+Campos:
+
+From Email:
+
+Recomendado (para canal soporte sin Reply-To):
+
+Enrico (Soporte) <eb.automation.ai+soporte@gmail.com>
+
+To Email (Expression):
+
+js
+Copiar código
+{{ ($json["Dirección de correo electrónico"] ?? "").toString().replace(/\r?\n/g, "").trim() }}
+Subject:
+
+Pack #1 (GRATIS) — Plantillas n8n + enlace de descarga
+
+Body:
+
+usa el body que has definido (TEXT o HTML)
+
+Options:
+
+Append n8n Attribution: OFF (recomendado)
+
+(Si existe en tu nodo) Settings del nodo:
+
+Continue On Fail: ON (para que el flujo pueda loguear errores en Sheets)
+
+Credenciales SMTP:
+
+Create new credential:
+
+Host: smtp.gmail.com
+
+Port: 465
+
+Secure/SSL: ON
+
+User: eb.automation.ai@gmail.com
+
+Password: App Password
+
+Client Host Name: localhost
+
+4.5 Merge (Combine by Position)
+Nodo: Merge
+
+Mode: Combine by Position
+Conexiones (crítico):
+
+Merge Input 1 ← salida de Send email (SMTP)
+
+Merge Input 2 ← salida TRUE de IF Email válido (row data)
+
+4.6 Edit Fields / Set (pass-through)
+Nodo: Edit Fields (Set)
+
+Include other fields / pass-through: ON
+
+Añade/ajusta campos (Expression):
+
+sent
+
+js
+Copiar código
+{{ $json.error ? "" : true }}
+sent_at (formato legible)
+
+js
+Copiar código
+{{ $json.error ? "" : $now.setZone('Europe/Madrid').toFormat('yyyy-LL-dd HH:mm:ss') }}
+status
+
+js
+Copiar código
+{{ $json.error ? "ERROR" : "OK_SENT" }}
+status_detail
+
+js
+Copiar código
+{{ $json.error ? "E_SMTP_SEND" : "OK_SENT" }}
+err_msg
+
+js
+Copiar código
+{{
+  $json.error
+    ? ("E_SMTP_SEND | " + (
+        $json.error?.message
+        ?? $json.message
+        ?? "SMTP send failed"
+      ))
+    : ""
+}}
+gmail_id
+
+js
+Copiar código
+{{ "" }}
+gmail_threadId
+
+js
+Copiar código
+{{ "" }}
+4.7 Update row in sheet (principal)
+Nodo: Google Sheets → Update Row
+
+Spreadsheet: el mismo
+
+Sheet: Respuestas de formulario 1
+
+Match:
+
+“Using to match”: row_key
+
+Valor (Expression sanitizada):
+
+js
+Copiar código
+{{ ($json.row_key ?? "").toString().replace(/\r?\n/g, "").trim() }}
+Mapeo:
+
+Recomendado: Map Automatically
+
+Si usas manual: actualiza estos campos:
+
+sent, sent_at, status, status_detail, err_msg, gmail_id, gmail_threadId
+
+4.8 Update row — ERROR Missing email (rama FALSE)
+Nodo: Google Sheets → Update Row (ERROR)
+Match por row_key (misma expresión sanitizada).
+
+Valores:
+
+sent = ""
+
+sent_at = ""
+
+status = "ERROR"
+
+status_detail = "E_MISSING_EMAIL"
+
+err_msg = "E_MISSING_EMAIL | Missing email"
+
+gmail_id = ""
+
+gmail_threadId = ""
+
+5) Testing checklist (end-to-end)
+5.1 Caso A — Éxito (email válido)
+Envía un Google Form con email válido.
+
+Espera hasta 90s (polling).
+
+Confirma que llega 1 correo.
+
+En Google Sheets, en esa fila:
+
+sent = TRUE
+
+sent_at = YYYY-MM-DD HH:mm:ss
+
+status = OK_SENT
+
+status_detail = OK_SENT
+
+err_msg vacío
+
+5.2 Caso B — Error (Missing email)
+Inserta una fila manual con email vacío o con un espacio " "
+
+Confirma que NO se envía email.
+
+En el sheet:
+
+status = ERROR
+
+status_detail = E_MISSING_EMAIL
+
+err_msg = E_MISSING_EMAIL | Missing email
+
+5.3 Caso C — Anti-reenvío
+Repite el trigger sobre una fila ya enviada (sent TRUE).
+
+Debe bloquearse en IF Pendiente (no reenvía).
+
+6) Publicación para distribución (GitHub Release)
+Tu ZIP debe incluir:
+
+README.md
+
+docs/SETUP.md
+
+docs/SHEET_SCHEMA.md
+
+docs/TROUBLESHOOTING.md
+
+workflows/pack-01-funnel-googleform-sheets-gmail.json
+
+Y el enlace de descarga recomendado:
+
+.../releases/latest/download/enrico-pack-01.zip
+
+yaml
+Copiar código
